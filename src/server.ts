@@ -5,6 +5,8 @@ import { initBrowser, closeBrowser, getBrowserInstance } from './browser';
 import { sendMessageToUser, checkLogin, startDialogue } from './actions';
 import prisma from './db';
 
+import { adminHtml } from './admin_html';
+
 const fastify = Fastify({ logger: true });
 
 interface SendMessageBody {
@@ -22,7 +24,8 @@ interface StartDialogueBody {
 let browserStatus = 'not-started';
 
 fastify.get('/', async (request, reply) => {
-    return { status: 'ok', message: 'Telegram Simulator is running', browserStatus };
+    // Return HTML Admin Panel
+    return reply.type('text/html').send(adminHtml);
 });
 
 fastify.get('/reload', async (request, reply) => {
