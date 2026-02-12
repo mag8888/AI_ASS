@@ -20,6 +20,9 @@ interface StartDialogueBody {
     topic: string;
 }
 
+interface LoginPhoneBody { phone: string; }
+interface LoginCodeBody { code: string; }
+
 // Debug status
 let browserStatus = 'not-started';
 
@@ -186,14 +189,22 @@ fastify.post<{ Body: StartDialogueBody }>('/start-dialogue', async (request, rep
     const { page } = await initBrowser();
 
     if (!page) {
-        return reply.code(500).send({ error: 'Browser not initialized' } catch (err) {
-            request.log.error(err);
-            return reply.code(500).send({ error: 'Failed to start dialogue', details: (err as Error).message });
-        }
-    });
+        return reply.code(500).send({ error: 'Browser not initialized' });
+    }
 
-interface LoginPhoneBody { phone: string; }
-interface LoginCodeBody { code: string; }
+    try {
+        const isLoggedIn = await checkLogin(page);
+        if (!isLoggedIn) {
+            return reply.code(401).send({ error: 'Telegram not logged in. Please check the browser window.' });
+        }
+
+        const result = await startDialogue(page, username, referrer, topic);
+        return result;
+    } catch (err) {
+        request.log.error(err);
+        return reply.code(500).send({ error: 'Failed to start dialogue', details: (err as Error).message });
+    }
+});
 
 fastify.post<{ Body: LoginPhoneBody }>('/login-phone', async (request, reply) => {
     const { phone } = request.body;
@@ -230,21 +241,6 @@ fastify.post<{ Body: LoginCodeBody }>('/login-code', async (request, reply) => {
     } catch (err) {
         return reply.code(500).send({ error: 'Failed to submit code', details: (err as Error).message });
     }
-});
-    }
-
-try {
-    const isLoggedIn = await checkLogin(page);
-    if (!isLoggedIn) {
-        return reply.code(401).send({ error: 'Telegram not logged in. Please check the browser window.' });
-    }
-
-    const result = await startDialogue(page, username, referrer, topic);
-    return result;
-} catch (err) {
-    request.log.error(err);
-    return reply.code(500).send({ error: 'Failed to start dialogue', details: (err as Error).message });
-}
 });
 
 
