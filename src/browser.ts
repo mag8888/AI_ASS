@@ -35,12 +35,25 @@ export async function initBrowser() {
     await page.setViewport({ width: 1280, height: 800 });
 
     console.log('Browser launched. Loading Telegram Web...');
-    await page.goto('https://web.telegram.org/k/', { waitUntil: 'networkidle2', timeout: 60000 });
+    try {
+        // Use domcontentloaded for faster initial load, then wait for content
+        await page.goto('https://web.telegram.org/k/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+        console.log('Page loaded (domcontentloaded). Waiting for QR code or chat list...');
+
+        // Try to wait for key elements (QR canvas or chat list)
+        try {
+            await page.waitForSelector('canvas, .chat-list', { timeout: 10000 });
+        } catch (e) {
+            console.log('Element wait timed out, proceeding to screenshot anyway');
+        }
+    } catch (err) {
+        console.error('Navigation error:', err);
+    }
 
     // Take a screenshot to check login status/QR code
-    console.log('Page loaded. Taking screenshot...');
+    console.log('Taking screenshot...');
     await page.screenshot({ path: 'login_status.png' });
-    console.log('Screenshot saved to login_status.png. Please check this image to scan QR code if needed.');
+    console.log('Screenshot saved to login_status.png. Please scan QR code.');
 
     return { browser, page };
 }
