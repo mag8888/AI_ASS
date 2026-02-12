@@ -1,10 +1,24 @@
 import { Page } from 'puppeteer';
+import path from 'path';
+
+async function screenshot(page: Page, step: string) {
+    try {
+        console.log(`[Auth] Screenshot: ${step}`);
+        await page.screenshot({ path: path.join(process.cwd(), 'login_status.png') });
+    } catch (e) {
+        console.error(`[Auth] Failed to take screenshot for ${step}:`, e);
+    }
+}
 
 export async function loginWithPhone(page: Page, phoneNumber: string) {
     console.log(`[Auth] Starting login with phone: ${phoneNumber}`);
+    await screenshot(page, 'start_phone_login');
 
     // Navigate to K version specifically as it's more stable for automation
-    await page.goto('https://web.telegram.org/k/', { waitUntil: 'networkidle0' });
+    if (!page.url().includes('web.telegram.org/k/')) {
+        await page.goto('https://web.telegram.org/k/', { waitUntil: 'networkidle0' });
+        await screenshot(page, 'navigated_to_k');
+    }
 
     // Check if we are potentially already logged in
     const isLogin = await page.$('.login_head_submit_btn, .login_header, .input-field-input');
@@ -15,25 +29,39 @@ export async function loginWithPhone(page: Page, phoneNumber: string) {
     }
 
     // 1. Click "Log in by phone Number" if visible
+    console.log('[Auth] Looking for "Phone Number" button...');
     try {
-        const phoneLoginBtnHandle = await page.evaluateHandle(() => {
+        const clicked = await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button'));
-            return buttons.find(b => b.textContent && b.textContent.includes('Phone Number'));
+            const phoneBtn = buttons.find(b => b.textContent && b.textContent.toLowerCase().includes('phone number'));
+            if (phoneBtn) {
+                phoneBtn.click();
+                return true;
+            }
+            return false;
         });
 
-        const phoneLoginBtn = phoneLoginBtnHandle.asElement();
-        if (phoneLoginBtn) {
-            await (phoneLoginBtn as any).click();
-            await new Promise(r => setTimeout(r, 500));
+        if (clicked) {
+            console.log('[Auth] Clicked "Phone Number" button via evaluate');
+            await new Promise(r => setTimeout(r, 1000));
+            await screenshot(page, 'clicked_phone_button');
+        } else {
+            console.log('[Auth] "Phone Number" button not found via evaluate. Checking if input is already present.');
         }
+
     } catch (e) {
-        console.log('[Auth] "Phone Number" button not found or already in phone mode.');
+        console.log('[Auth] Error trying to click phone button:', e);
     }
 
     // 2. Input Phone Number
     // Selector for phone input in Web K
-    const inputSelector = 'input[name="phone_number"], .input-field-input';
-    await page.waitForSelector(inputSelector, { timeout: 5000 });
+    const inputSelector = 'input[name="phone_number"], .input-field-input, input[type="tel"]';
+    try {
+        await page.waitForSelector(inputSelector, { timeout: 5000 });
+    } catch (e) {
+        await screenshot(page, 'input_not_found');
+        throw new Error('Phone input field not found. See screenshot.');
+    }
 
     // Clear input first
     await page.click(inputSelector);
@@ -42,21 +70,39 @@ export async function loginWithPhone(page: Page, phoneNumber: string) {
 
     await page.type(inputSelector, phoneNumber, { delay: 100 });
     await new Promise(r => setTimeout(r, 500));
+    await screenshot(page, 'phone_entered');
 
     // 3. Click Next
-    const nextBtn = await page.$('.btn-primary, button[type="submit"]');
+    const nextBtn = await page.$('.btn-primary, button[type="submit"], .login_head_submit_btn');
     if (nextBtn) {
         await nextBtn.click();
+        console.log('[Auth] Clicked Next button');
     } else {
         await page.keyboard.press('Enter');
+        console.log('[Auth] Pressed Enter');
     }
 
     console.log('[Auth] Phone number submitted. Waiting for code prompt...');
+    await new Promise(r => setTimeout(r, 2000));
+    await screenshot(page, 'after_submit');
 
-    // 4. Wait for Code Input
+    // 4. Check for errors (e.g. invalid number)
+    const error = await page.$('.error');
+    if (error) {
+        const errorText = await page.evaluate(el => el.textContent, error);
+        throw new Error(`Telegram Error: ${errorText}`);
+    }
+
+    // 5. Wait for Code Input
     // Usually triggers a new slide/form
-    await page.waitForSelector('input[name="phone_code"], input[type="tel"]', { timeout: 10000 });
-    console.log('[Auth] Ready for code input.');
+    try {
+        await page.waitForSelector('input[name="phone_code"], input[type="tel"]', { timeout: 10000 });
+        console.log('[Auth] Ready for code input.');
+        await screenshot(page, 'waiting_for_code');
+    } catch (e) {
+        await screenshot(page, 'timeout_waiting_for_code');
+        throw new Error('Timeout waiting for code input. Check screenshot.');
+    }
 }
 
 export async function submitVerificationCode(page: Page, code: string) {
@@ -69,10 +115,12 @@ export async function submitVerificationCode(page: Page, code: string) {
 
     // Web K usually auto-submits once length is reached, but we can try pressing Enter
     await new Promise(r => setTimeout(r, 1000));
+    await screenshot(page, 'code_entered');
 
     // Check for password prompt (2FA)
     const passwordInput = await page.$('input[type="password"]');
     if (passwordInput) {
+        await screenshot(page, '2fa_required');
         throw new Error('2FA Password required. This bot does not support 2FA yet.');
     }
 
@@ -80,9 +128,11 @@ export async function submitVerificationCode(page: Page, code: string) {
     try {
         await page.waitForSelector('.chat-list', { timeout: 15000 });
         console.log('[Auth] Login successful!');
+        await screenshot(page, 'login_success');
         return true;
     } catch (e) {
         console.log('[Auth] Chat list did not appear. Code might be wrong.');
+        await screenshot(page, 'login_failed');
         throw new Error('Login failed or code invalid.');
     }
 }
