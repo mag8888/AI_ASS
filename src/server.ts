@@ -261,7 +261,6 @@ fastify.post<{ Body: LoginPasswordBody }>('/login-password', async (request, rep
 
         return { success: true, message: 'Login successful (2FA)! Listener started.' };
     } catch (err) {
-    } catch (err) {
         return reply.code(500).send({ error: 'Failed to submit password', details: (err as Error).message });
     }
 });
