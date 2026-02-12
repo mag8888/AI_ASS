@@ -44,9 +44,9 @@ export async function initBrowser() {
         console.error('Error during lock cleanup:', e);
     }
 
-    console.log('Launching browser...');
+    console.log('Launching browser (Headless: New)...');
     browser = await puppeteer.launch({
-        headless: true, // Run in headless mode to avoid X11 errors
+        headless: 'new', // Use new Chrome Headless mode (more stable, less detectable)
         userDataDir: USER_DATA_DIR,
         args: [
             '--no-sandbox',
@@ -62,9 +62,8 @@ export async function initBrowser() {
             '--ignore-certificate-errors-spki-list',
             '--disable-blink-features=AutomationControlled',
             '--disable-features=IsolateOrigins,site-per-process',
-            '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"'
         ],
-        ignoreDefaultArgs: ['--enable-automation'] // Critical for stealth
+        ignoreDefaultArgs: ['--enable-automation']
     });
 
     const pages = await browser.pages();
@@ -83,9 +82,6 @@ export async function initBrowser() {
 
     console.log('Loading Telegram Web K...');
     try {
-        // Use user agent rotation or fixed one
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
-
         // Go to Telegram Web K (Classic version, more stable)
         await page.goto('https://web.telegram.org/k/', {
             waitUntil: 'networkidle0',
