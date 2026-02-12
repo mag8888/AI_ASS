@@ -32,6 +32,25 @@ fastify.get('/login-qr', async (request, reply) => {
     }
 });
 
+fastify.get('/messages', async (request, reply) => {
+    try {
+        const messages = await prisma.message.findMany({
+            include: {
+                dialogue: {
+                    include: {
+                        user: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50
+        });
+        return { messages };
+    } catch (error) {
+        return reply.code(500).send({ error: 'Failed to fetch messages' });
+    }
+});
+
 fastify.post<{ Body: SendMessageBody }>('/send', async (request, reply) => {
     const { username, message } = request.body;
 
@@ -104,8 +123,15 @@ const start = async () => {
         console.log(`Server listening on http://0.0.0.0:${port}`);
 
         // Initialize browser after server is up to avoid deployment timeouts
-        initBrowser().then(() => {
+        initBrowser().then(async ({ page }) => {
             console.log('Browser initialized successfully');
+
+            // Start message listener
+            if (page) {
+                const { startListener } = await import('./listener');
+                startListener(page);
+                console.log('Message listener started');
+            }
         }).catch(err => {
             console.error('Failed to initialize browser:', err);
         });
