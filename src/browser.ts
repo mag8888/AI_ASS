@@ -94,6 +94,14 @@ export async function initBrowser() {
 
         console.log('Page loaded (networkidle0). Waiting for selector...');
 
+        // Simulate human interaction
+        try {
+            await page.mouse.move(100, 100);
+            await page.mouse.down();
+            await page.mouse.up();
+            await page.mouse.move(200, 200);
+        } catch (e) { console.error('Mouse sim failed', e); }
+
         // Try to wait for key elements (QR canvas or chat list)
         try {
             await page.waitForSelector('.chat-list, .login_head_bg, canvas', { timeout: 15000 });
