@@ -336,6 +336,37 @@ export const adminHtml = `
             } catch(e) { alert('Error: ' + e); }
         }
 
+        async function loginPhone() {
+            const phone = document.getElementById('phone-input').value;
+            if(!phone) return alert('Enter phone number');
+            
+            try {
+                const res = await fetch('/login-phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+                const data = await res.json();
+                alert(data.success ? data.message : 'Error: ' + data.error);
+            } catch(e) { alert('Net Error'); }
+        }
+
+        async function loginCode() {
+            const code = document.getElementById('code-input').value;
+            if(!code) return alert('Enter code');
+            
+            try {
+                const res = await fetch('/login-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                alert(data.success ? data.message : 'Error: ' + data.error);
+                if(data.success) setTimeout(refreshScreen, 3000);
+            } catch(e) { alert('Net Error'); }
+        }
+
         async function sendMessage(e) {
             e.preventDefault();
             const btn = e.target.querySelector('button');

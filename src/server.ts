@@ -186,21 +186,65 @@ fastify.post<{ Body: StartDialogueBody }>('/start-dialogue', async (request, rep
     const { page } = await initBrowser();
 
     if (!page) {
-        return reply.code(500).send({ error: 'Browser not initialized' });
-    }
+        return reply.code(500).send({ error: 'Browser not initialized' } catch (err) {
+            request.log.error(err);
+            return reply.code(500).send({ error: 'Failed to start dialogue', details: (err as Error).message });
+        }
+    });
+
+interface LoginPhoneBody { phone: string; }
+interface LoginCodeBody { code: string; }
+
+fastify.post<{ Body: LoginPhoneBody }>('/login-phone', async (request, reply) => {
+    const { phone } = request.body;
+    if (!phone) return reply.code(400).send({ error: 'Phone number required' });
+
+    const { page } = await initBrowser();
+    if (!page) return reply.code(500).send({ error: 'Browser not initialized' });
 
     try {
-        const isLoggedIn = await checkLogin(page);
-        if (!isLoggedIn) {
-            return reply.code(401).send({ error: 'Telegram not logged in. Please check the browser window.' });
-        }
-
-        const result = await startDialogue(page, username, referrer, topic);
-        return result;
+        const { loginWithPhone } = await import('./auth_actions');
+        await loginWithPhone(page, phone);
+        return { success: true, message: 'Code requested. Please check your Telegram/SMS.' };
     } catch (err) {
-        request.log.error(err);
-        return reply.code(500).send({ error: 'Failed to start dialogue', details: (err as Error).message });
+        return reply.code(500).send({ error: 'Failed to request code', details: (err as Error).message });
     }
+});
+
+fastify.post<{ Body: LoginCodeBody }>('/login-code', async (request, reply) => {
+    const { code } = request.body;
+    if (!code) return reply.code(400).send({ error: 'Code required' });
+
+    const { page } = await initBrowser();
+    if (!page) return reply.code(500).send({ error: 'Browser not initialized' });
+
+    try {
+        const { submitVerificationCode } = await import('./auth_actions');
+        await submitVerificationCode(page, code);
+
+        // Start listener immediately after successful login
+        const { startListener } = await import('./listener');
+        startListener(page);
+
+        return { success: true, message: 'Login successful! Listener started.' };
+    } catch (err) {
+        return reply.code(500).send({ error: 'Failed to submit code', details: (err as Error).message });
+    }
+});
+    }
+
+try {
+    const isLoggedIn = await checkLogin(page);
+    if (!isLoggedIn) {
+        return reply.code(401).send({ error: 'Telegram not logged in. Please check the browser window.' });
+    }
+
+    const result = await startDialogue(page, username, referrer, topic);
+    return result;
+} catch (err) {
+    request.log.error(err);
+    return reply.code(500).send({ error: 'Failed to start dialogue', details: (err as Error).message });
+}
 });
 
 
