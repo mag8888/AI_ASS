@@ -1,0 +1,29 @@
+{
+  "name": "telegram-simulator",
+  "version": "1.0.0",
+  "description": "Simulate human behavior on Telegram Web using Puppeteer",
+  "main": "dist/server.js",
+  "scripts": {
+    "start": "ts-node src/server.ts",
+    "dev": "ts-node src/server.ts",
+    "build": "tsc"
+  },
+  "keywords": [
+    "telegram",
+    "puppeteer",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fastify": "^4.26.1",
+    "puppeteer": "^22.0.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+session_data
+*.log
+.DS_Store
+coverage
+debug_error_*.png
