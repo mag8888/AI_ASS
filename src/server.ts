@@ -58,6 +58,25 @@ fastify.get('/screen', async (request, reply) => {
     }
 });
 
+fastify.get('/reset-session', async (request, reply) => {
+    try {
+        console.log('Resetting session...');
+        await closeBrowser();
+
+        const sessionDir = path.join(process.cwd(), 'session_data');
+        if (fs.existsSync(sessionDir)) {
+            fs.rmSync(sessionDir, { recursive: true, force: true });
+        }
+
+        // Restart browser
+        initBrowser().catch(console.error);
+
+        return { success: true, message: 'Session reset. Browser restarting...' };
+    } catch (err) {
+        return reply.code(500).send({ error: 'Failed to reset session', details: (err as Error).message });
+    }
+});
+
 fastify.get('/login-qr', async (request, reply) => {
     // Refresh screenshot if page is available
     const { page } = getBrowserInstance();

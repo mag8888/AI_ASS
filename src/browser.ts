@@ -60,10 +60,11 @@ export async function initBrowser() {
             '--window-position=0,0',
             '--ignore-certificate-errors',
             '--ignore-certificate-errors-spki-list',
-            '--disable-blink-features=AutomationControlled', // Critical for preventing detection/reload loops
+            '--disable-blink-features=AutomationControlled',
             '--disable-features=IsolateOrigins,site-per-process',
             '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"'
-        ]
+        ],
+        ignoreDefaultArgs: ['--enable-automation'] // Critical for stealth
     });
 
     const pages = await browser.pages();

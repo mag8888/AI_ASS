@@ -281,6 +281,9 @@ export const adminHtml = `
                      <button class="tg-button danger" onclick="reloadBrowser()">
                         ⚠️ Reload Browser
                     </button>
+                    <button class="tg-button danger" style="background: rgba(239, 68, 68, 0.2);" onclick="resetSession()">
+                        🔴 Reset Session
+                    </button>
                 </div>
             </div>
 
@@ -320,6 +323,16 @@ export const adminHtml = `
                 const data = await res.json();
                 alert(data.message || 'Reloaded');
                 setTimeout(refreshScreen, 1000);
+            } catch(e) { alert('Error: ' + e); }
+        }
+
+        async function resetSession() {
+            if(!confirm('⚠️ Are you sure? This will LOG OUT the bot and delete all session data. You will need to scan QR again.')) return;
+            try {
+                const res = await fetch('/reset-session');
+                const data = await res.json();
+                alert(data.message);
+                setTimeout(refreshScreen, 5000);
             } catch(e) { alert('Error: ' + e); }
         }
 
