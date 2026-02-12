@@ -17,6 +17,10 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxi6 \
     libxtst6 \
+    libdrm2 \
+    libgbm1 \
+    libxrandr2 \
+    libcups2 \
     python3 \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
