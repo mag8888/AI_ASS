@@ -166,34 +166,75 @@ async function saveMessages(username: string, chatName: string, messages: any[])
     }
 }
 
-/**
- * Main listener loop
- */
+// Global flag to control listener loop
+let isRunning = false;
+
+export function stopListener() {
+    isRunning = false;
+    console.log('[Listener] Stopping...');
+}
+
 export async function startListener(page: Page) {
+    if (isRunning) {
+        console.log('[Listener] Listener was already running, stopping previous instance...');
+        isRunning = false;
+        await new Promise(r => setTimeout(r, 1000));
+    }
+
+    isRunning = true;
     console.log('[Listener] Starting message listener...');
 
-    const POLL_INTERVAL = 10000; // 10 seconds
+    const pollLoop = async () => {
+        if (!isRunning) return;
 
-    setInterval(async () => {
         try {
-            // Go to main chat list
-            await page.goto('https://web.telegram.org/k/', { waitUntil: 'networkidle2', timeout: 10000 });
+            // Check if page is still valid
+            if (page.isClosed()) {
+                console.log('[Listener] Page closed, stopping listener.');
+                isRunning = false;
+                return;
+            }
 
-            // Poll for unread messages
-            const unreadChats = await pollIncomingMessages(page);
+            const url = page.url();
+            if (url.includes('web.telegram.org')) {
+                // Poll for unread messages
+                const unreadChats = await pollIncomingMessages(page);
 
-            if (unreadChats.length > 0) {
-                console.log(`[Listener] Found ${unreadChats.length} unread chats`);
+                if (unreadChats.length > 0) {
+                    console.log(`[Listener] Found ${unreadChats.length} unread chats`);
 
-                // Process each unread chat
-                for (const chat of unreadChats) {
-                    const messages = await scrapeChat(page, chat.username);
-                    await saveMessages(chat.username, chat.chatName, messages);
+                    // Process each unread chat
+                    for (const chat of unreadChats) {
+                        if (!isRunning) break;
+                        const messages = await scrapeChat(page, chat.username);
+                        await saveMessages(chat.username, chat.chatName, messages);
+                    }
+
+                    // Return to chat list after processing
+                    if (isRunning && !page.isClosed()) {
+                        try {
+                            await page.goto('https://web.telegram.org/k/', { waitUntil: 'networkidle2', timeout: 10000 });
+                        } catch (e) {
+                            console.log('[Listener] Nav warning:', (e as Error).message);
+                        }
+                    }
                 }
             }
 
         } catch (error) {
+            // Ignore detached frame errors if stopping
+            if (!isRunning || (error as Error).message.includes('detached Frame') || (error as Error).message.includes('Target closed') || (error as Error).message.includes('Session closed')) {
+                console.log('[Listener] Frame detached or stopped.');
+                isRunning = false;
+                return;
+            }
             console.error('[Listener] Polling error:', error);
         }
-    }, POLL_INTERVAL);
+
+        if (isRunning) {
+            setTimeout(pollLoop, 10000); // Poll every 10s
+        }
+    };
+
+    pollLoop();
 }
