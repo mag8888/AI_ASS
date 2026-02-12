@@ -15,7 +15,7 @@ export async function initBrowser() {
 
     console.log('Launching browser...');
     browser = await puppeteer.launch({
-        headless: false, // Visible for debugging and QR scanning
+        headless: true, // Run in headless mode to avoid X11 errors
         userDataDir: USER_DATA_DIR,
         args: [
             '--no-sandbox',
@@ -36,6 +36,11 @@ export async function initBrowser() {
 
     console.log('Browser launched. Loading Telegram Web...');
     await page.goto('https://web.telegram.org/k/', { waitUntil: 'networkidle0', timeout: 60000 });
+
+    // Take a screenshot to check login status/QR code
+    console.log('Page loaded. Taking screenshot...');
+    await page.screenshot({ path: 'login_status.png' });
+    console.log('Screenshot saved to login_status.png. Please check this image to scan QR code if needed.');
 
     return { browser, page };
 }
