@@ -65,11 +65,16 @@ fastify.get('/reset-session', async (request, reply) => {
 
         const sessionDir = path.join(process.cwd(), 'session_data');
         if (fs.existsSync(sessionDir)) {
-            fs.rmSync(sessionDir, { recursive: true, force: true });
+            try {
+                fs.rmSync(sessionDir, { recursive: true, force: true });
+            } catch (e) {
+                console.error('Failed to delete session directory (might be locked):', e);
+                // Continue anyway, maybe the browser launch will overwrite/fix
+            }
         }
 
         // Restart browser
-        initBrowser().catch(console.error);
+        setTimeout(() => initBrowser().catch(console.error), 1000); // 1s delay to let processes cleanup
 
         return { success: true, message: 'Session reset. Browser restarting...' };
     } catch (err) {

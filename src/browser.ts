@@ -62,8 +62,7 @@ export async function initBrowser() {
             '--ignore-certificate-errors-spki-list',
             '--disable-blink-features=AutomationControlled',
             '--disable-features=IsolateOrigins,site-per-process',
-        ],
-        ignoreDefaultArgs: ['--enable-automation']
+        ]
     });
 
     const pages = await browser.pages();
