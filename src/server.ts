@@ -16,6 +16,10 @@ interface StartDialogueBody {
     topic: string;
 }
 
+fastify.get('/', async (request, reply) => {
+    return { status: 'ok', message: 'Telegram Simulator is running' };
+});
+
 fastify.post<{ Body: SendMessageBody }>('/send', async (request, reply) => {
     const { username, message } = request.body;
 
