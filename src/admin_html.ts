@@ -287,6 +287,35 @@ export const adminHtml = `
                 </div>
             </div>
 
+            <!-- Phone Auth Card -->
+            <div class="section-card">
+                <div class="card-header"><h2>Phone Login</h2></div>
+                <div class="controls-grid">
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" id="phone-input" class="tg-input" placeholder="+1234567890">
+                    </div>
+                    <button class="tg-button" onclick="loginPhone()">1. Send Code</button>
+                    
+                    <div style="border-top: 1px solid var(--border-color); margin: 10px 0;"></div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Verification Code</label>
+                        <input type="text" id="code-input" class="tg-input" placeholder="12345">
+                    </div>
+                    <button class="tg-button secondary" onclick="loginCode()">2. Login with Code</button>
+
+                    <div style="border-top: 1px solid var(--border-color); margin: 10px 0;"></div>
+
+                    <div class="form-group">
+                        <label class="form-label">2FA Password (Cloud)</label>
+                        <input type="password" id="password-input" class="tg-input" placeholder="Your Password">
+                    </div>
+                    <button class="tg-button secondary" onclick="loginPassword()">3. Login with Password</button>
+                    
+                </div>
+            </div>
+            
             <div id="send-form-card" class="section-card">
                 <div class="card-header"><h2>Send Message</h2></div>
                 <div class="controls-grid">

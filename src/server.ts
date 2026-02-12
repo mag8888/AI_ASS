@@ -237,9 +237,31 @@ fastify.post<{ Body: LoginCodeBody }>('/login-code', async (request, reply) => {
         const { startListener } = await import('./listener');
         startListener(page);
 
-        return { success: true, message: 'Login successful! Listener started.' };
     } catch (err) {
         return reply.code(500).send({ error: 'Failed to submit code', details: (err as Error).message });
+    }
+});
+
+interface LoginPasswordBody { password: string; }
+
+fastify.post<{ Body: LoginPasswordBody }>('/login-password', async (request, reply) => {
+    const { password } = request.body;
+    if (!password) return reply.code(400).send({ error: 'Password required' });
+
+    const { page } = await initBrowser();
+    if (!page) return reply.code(500).send({ error: 'Browser not initialized' });
+
+    try {
+        const { submitPassword } = await import('./auth_actions');
+        await submitPassword(page, password);
+
+        // Start listener immediately after successful login
+        const { startListener } = await import('./listener');
+        startListener(page);
+
+        return { success: true, message: 'Login successful (2FA)! Listener started.' };
+    } catch (err) {
+        return reply.code(500).send({ error: 'Failed to submit password', details: (err as Error).message });
     }
 });
 

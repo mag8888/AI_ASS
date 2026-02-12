@@ -158,8 +158,59 @@ export async function submitVerificationCode(page: Page, code: string) {
         await screenshot(page, 'login_success');
         return true;
     } catch (e) {
+        // If chat list didn't appear, check if we are on password screen
+        const passwordInput = await page.$('input[type="password"]');
+        if (passwordInput) {
+            console.log('[Auth] 2FA Password screen detected.');
+            await screenshot(page, '2fa_required');
+            return '2FA_REQUIRED';
+        }
+
         console.log('[Auth] Chat list did not appear. Code might be wrong.');
         await screenshot(page, 'login_failed');
         throw new Error('Login failed or code invalid.');
+    }
+}
+
+export async function submitPassword(page: Page, password: string) {
+    console.log(`[Auth] Submitting 2FA password...`);
+    await screenshot(page, 'start_password_submit');
+
+    const passwordInputSelector = 'input[type="password"]';
+    try {
+        await page.waitForSelector(passwordInputSelector, { timeout: 5000 });
+    } catch (e) {
+        throw new Error('Password input not found. Are you on the 2FA screen?');
+    }
+
+    await page.type(passwordInputSelector, password, { delay: 100 });
+    await new Promise(r => setTimeout(r, 500));
+    await screenshot(page, 'password_entered');
+
+    // Click Next/Submit
+    const nextBtn = await page.$('.btn-primary, button[type="submit"], .login_head_submit_btn');
+    if (nextBtn) {
+        await nextBtn.click();
+    } else {
+        await page.keyboard.press('Enter');
+    }
+
+    console.log('[Auth] Password submitted. Waiting for login...');
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Wait for login success
+    try {
+        await page.waitForSelector('.chat-list', { timeout: 15000 });
+        console.log('[Auth] Login successful!');
+        await screenshot(page, 'login_success_2fa');
+        return true;
+    } catch (e) {
+        const error = await page.$('.error');
+        if (error) {
+            const errorText = await page.evaluate(el => el.textContent, error);
+            throw new Error(`Password Error: ${errorText}`);
+        }
+        await screenshot(page, 'login_failed_2fa');
+        throw new Error('Login failed after password.');
     }
 }
