@@ -18,13 +18,32 @@ export async function initBrowser() {
 
     // Fix for "Profile in use" error in Docker/Railway
     const lockFile = path.join(USER_DATA_DIR, 'SingletonLock');
-    if (fs.existsSync(lockFile)) {
-        console.log('Removing stale Chromium lock file...');
-        try {
-            fs.unlinkSync(lockFile);
-        } catch (e) {
-            console.error('Failed to remove lock file:', e);
+    try {
+        // existsSync returns false for broken symlinks, so we use lstatSync
+        if (fs.existsSync(USER_DATA_DIR)) {
+            // Try to unlink SingletonLock directly
+            try {
+                if (fs.lstatSync(lockFile).isSymbolicLink() || fs.existsSync(lockFile)) {
+                    console.log('Removing stale SingletonLock...');
+                    fs.unlinkSync(lockFile);
+                }
+            } catch (e: any) {
+                if (e.code !== 'ENOENT') console.error('Failed to check/remove SingletonLock:', e);
+            }
+
+            // Also remove other Singleton files
+            const otherLocks = ['SingletonCookie', 'SingletonSocket'];
+            for (const file of otherLocks) {
+                try {
+                    const p = path.join(USER_DATA_DIR, file);
+                    if (fs.existsSync(p) || fs.lstatSync(p).isSymbolicLink()) {
+                        fs.unlinkSync(p);
+                    }
+                } catch (e) { }
+            }
         }
+    } catch (e) {
+        console.error('Error during lock cleanup:', e);
     }
 
     console.log('Launching browser...');
