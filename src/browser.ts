@@ -44,9 +44,9 @@ export async function initBrowser() {
         console.error('Error during lock cleanup:', e);
     }
 
-    console.log('Launching browser (Headless: New)...');
+    console.log('Launching browser (Headless: true/New)...');
     browser = await puppeteer.launch({
-        headless: 'new', // Use new Chrome Headless mode (more stable, less detectable)
+        headless: true, // Puppeteer v22: true = New Headless mode
         userDataDir: USER_DATA_DIR,
         args: [
             '--no-sandbox',
