@@ -52,8 +52,9 @@ export async function initBrowser() {
 
     // Take a screenshot to check login status/QR code
     console.log('Taking screenshot...');
-    await page.screenshot({ path: 'login_status.png' });
-    console.log('Screenshot saved to login_status.png. Please scan QR code.');
+    const screenshotPath = path.join(process.cwd(), 'login_status.png');
+    await page.screenshot({ path: screenshotPath });
+    console.log(`Screenshot saved to ${screenshotPath}. Please scan QR code.`);
 
     return { browser, page };
 }

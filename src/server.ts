@@ -18,8 +18,11 @@ interface StartDialogueBody {
     topic: string;
 }
 
+// Debug status
+let browserStatus = 'not-started';
+
 fastify.get('/', async (request, reply) => {
-    return { status: 'ok', message: 'Telegram Simulator is running' };
+    return { status: 'ok', message: 'Telegram Simulator is running', browserStatus };
 });
 
 fastify.get('/login-qr', async (request, reply) => {
@@ -28,7 +31,15 @@ fastify.get('/login-qr', async (request, reply) => {
         const stream = fs.createReadStream(imagePath);
         return reply.type('image/png').send(stream);
     } else {
-        return reply.code(404).send({ error: 'QR code not found yet. Browser might still be initializing.' });
+        // Debug: List files in current directory to see what's going on
+        const files = fs.readdirSync(process.cwd());
+        return reply.code(404).send({
+            error: 'QR code not found yet.',
+            browserStatus,
+            cwd: process.cwd(),
+            files: files.filter(f => f.endsWith('.png') || f.endsWith('.json')),
+            message: 'Browser might still be initializing or failed.'
+        });
     }
 });
 
@@ -123,8 +134,10 @@ const start = async () => {
         console.log(`Server listening on http://0.0.0.0:${port}`);
 
         // Initialize browser after server is up to avoid deployment timeouts
+        browserStatus = 'initializing';
         initBrowser().then(async ({ page }) => {
             console.log('Browser initialized successfully');
+            browserStatus = 'ready';
 
             // Start message listener
             if (page) {
@@ -134,6 +147,7 @@ const start = async () => {
             }
         }).catch(err => {
             console.error('Failed to initialize browser:', err);
+            browserStatus = 'failed: ' + err.message;
         });
     } catch (err) {
         fastify.log.error(err);
