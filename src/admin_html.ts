@@ -428,8 +428,7 @@ export const adminHtml = `
             } catch(e) { alert('Net Error'); }
         }
 
-            } catch(e) { alert('Net Error'); }
-        }
+
 
         async function importSession() {
             const sessionJson = document.getElementById('session-input').value;
