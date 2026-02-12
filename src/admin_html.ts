@@ -445,7 +445,7 @@ export const adminHtml = `
         }
 
         function copyExtractionCode() {
-            const code = \`(function(){const s={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);s[k]=localStorage.getItem(k);}const j=JSON.stringify(s);console.log(j);copy(j);alert('Copied to clipboard!');})();\`;
+            const code = "(function(){const s={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);s[k]=localStorage.getItem(k);}const j=JSON.stringify(s);console.log(j);copy(j);alert('Copied to clipboard!');})();";
             navigator.clipboard.writeText(code).then(() => alert('Code copied! Run it in your browser Console.'));
         }
 
