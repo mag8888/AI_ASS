@@ -23,7 +23,7 @@ export async function loginWithPhone(page: Page, phoneNumber: string) {
 
         const phoneLoginBtn = phoneLoginBtnHandle.asElement();
         if (phoneLoginBtn) {
-            await phoneLoginBtn.click();
+            await (phoneLoginBtn as any).click();
             await new Promise(r => setTimeout(r, 500));
         }
     } catch (e) {
