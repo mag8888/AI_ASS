@@ -61,6 +61,14 @@ fastify.get('/screen', async (request, reply) => {
 fastify.get('/reset-session', async (request, reply) => {
     try {
         console.log('Resetting session...');
+
+        // Stop listener first to prevent detached frame errors
+        try {
+            // Dynamic import to avoid circular dependency issues at top level if any
+            const { stopListener } = await import('./listener');
+            if (stopListener) stopListener();
+        } catch (e) { console.error('Error stopping listener:', e); }
+
         await closeBrowser();
 
         const sessionDir = path.join(process.cwd(), 'session_data');
@@ -69,12 +77,19 @@ fastify.get('/reset-session', async (request, reply) => {
                 fs.rmSync(sessionDir, { recursive: true, force: true });
             } catch (e) {
                 console.error('Failed to delete session directory (might be locked):', e);
-                // Continue anyway, maybe the browser launch will overwrite/fix
             }
         }
 
-        // Restart browser
-        setTimeout(() => initBrowser().catch(console.error), 1000); // 1s delay to let processes cleanup
+        // Restart browser and listener
+        setTimeout(() => {
+            initBrowser().then(async ({ page }) => {
+                if (page) {
+                    console.log('Restarting listener...');
+                    const { startListener } = await import('./listener');
+                    startListener(page);
+                }
+            }).catch(console.error);
+        }, 1000);
 
         return { success: true, message: 'Session reset. Browser restarting...' };
     } catch (err) {
