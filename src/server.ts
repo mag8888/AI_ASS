@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import fs from 'fs';
 import path from 'path';
-import { initBrowser, closeBrowser } from './browser';
+import { initBrowser, closeBrowser, getBrowserInstance } from './browser';
 import { sendMessageToUser, checkLogin, startDialogue } from './actions';
 import prisma from './db';
 
@@ -25,7 +25,35 @@ fastify.get('/', async (request, reply) => {
     return { status: 'ok', message: 'Telegram Simulator is running', browserStatus };
 });
 
+fastify.get('/screen', async (request, reply) => {
+    const { page } = getBrowserInstance();
+    if (!page) {
+        return reply.code(500).send({ error: 'Browser not initialized' });
+    }
+
+    try {
+        const screenshotPath = path.join(process.cwd(), 'current_screen.png');
+        await page.screenshot({ path: screenshotPath });
+
+        const stream = fs.createReadStream(screenshotPath);
+        return reply.type('image/png').send(stream);
+    } catch (err) {
+        request.log.error(err);
+        return reply.code(500).send({ error: 'Failed to take screenshot', details: (err as Error).message });
+    }
+});
+
 fastify.get('/login-qr', async (request, reply) => {
+    // Refresh screenshot if page is available
+    const { page } = getBrowserInstance();
+    if (page) {
+        try {
+            await page.screenshot({ path: path.join(process.cwd(), 'login_status.png') });
+        } catch (e) {
+            console.error("Failed to refresh login screenshot:", e);
+        }
+    }
+
     const imagePath = path.join(process.cwd(), 'login_status.png');
     if (fs.existsSync(imagePath)) {
         const stream = fs.createReadStream(imagePath);
